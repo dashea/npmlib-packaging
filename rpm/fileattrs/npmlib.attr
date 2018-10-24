@@ -1,0 +1,3 @@
+%__npmlib_provides %{_rpmconfigdir}/npmlib.prov
+%__npmlib_requires %{_rpmconfigdir}/npmlib.req
+%__npmlib_path ^/usr/lib/npmlib/[^/]+/[^/]+/package\\.json$

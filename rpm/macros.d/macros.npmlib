@@ -1,0 +1,8 @@
+# npm library directory
+%npmlib_sitelib %{_prefix}/lib/npm-library
+
+# arch specific library directory, not currently used
+%npmlib_sitearch %{_prefix}/lib/npm-library
+
+# command to symlink dependencies, run in %%install
+%npmlib_symlink_deps %{_rpmconfigdir}/npmlib-symlink-deps %{npmlib_sitelib}
