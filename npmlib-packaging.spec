@@ -12,9 +12,7 @@ Requires:       nodejs-packaging
 
 # Pin to specific versions of the npm deps, since there's no way to
 # bootstrap auto-generated requires
-%global fs_extra_version 7.0.0
 %global semver_version 5.6.0
-Requires:       npmlib(fs-extra) = %{fs_extra_version}
 Requires:       npmlib(semver) = %{semver_version}
 
 %description
@@ -32,7 +30,6 @@ use npm2spec.
 mkdir -p %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/node_modules
 cp -r rpm %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/
 # bootstrap the deps
-ln -s %{_prefix}/lib/npm-library/fs-extra/%{fs_extra_version} %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/node_modules/fs-extra
 ln -s %{_prefix}/lib/npm-library/semver/%{semver_version} %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/node_modules/semver
 
 mkdir -p %{buildroot}%{_rpmconfigdir}
