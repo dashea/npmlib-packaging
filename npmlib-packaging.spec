@@ -45,6 +45,7 @@ ln -s %{nodejs_sitelib}/rpm/npmlib-symlink-deps %{buildroot}%{_rpmconfigdir}/npm
 %files
 %doc README.md
 %license COPYING
+%{_prefix}/lib/npm-library/
 %{_prefix}/lib/npm-library/npmlib-packaging/
 %{_rpmmacrodir}/macros.npmlib
 %{_fileattrsdir}/npmlib.attr
