@@ -20,29 +20,20 @@ const readline = require('readline');
 const path = require('path');
 const fs = require('fs');
 
-// Stdin is a list of package.json paths to process, one per line
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
-
-// output the node requirement
-stdout.write('nodejs(engine)\n');
-
-rl.on('line', (line) => {
-  processPackageJson(line);
-});
-
 // walk the dependencies for the given package.json
-function processPackageJson(packagePath) {
+function processPackageJSON(packagePath, packageObj) {
   var modulePath = path.dirname(packagePath);
-  var packageData = JSON.parse(fs.readFileSync(packagePath));
 
-  Object.keys(packageData.dependencies).forEach((dependency) => {
-    processDependency(modulePath, dependency);
-  });
+  // start with the engine dependency
+  var reqs = 'nodejs(engine)\n';
+
+  reqs = Object.keys(packageObj.dependencies).reduce((acc, dependency) => {
+    return acc + processDependency(modulePath, dependency);
+  }, reqs);
+
+  return reqs;
 }
+module.exports.processPackageJSON = processPackageJSON;
 
 // For each dependency, decode the symlink in node_modules to
 // a specific package version
@@ -54,5 +45,27 @@ function processDependency(modulePath, dependency) {
   var depVersion = path.basename(depLink);
 
   // Write to stdout directly; using readline will generate more line events
-  process.stdout.write('Requires: npmlib(' + dependency + ') = ' + depVersion + '\n');
+  return 'npmlib(' + dependency + ') = ' + depVersion + '\n';
+}
+module.exports.processDependency = processDependency;
+
+function main() {
+  // Stdin is a list of package.json paths to process, one per line
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+  });
+
+  rl.on('line', (line) => {
+    var packageData = fs.readFileSync(line);
+    var requiresData = processPackageJSON(JSON.parse(line, packageData));
+
+    // use stdout directly, going through the readline interface generates extra line events
+    process.stdout.write(requireData);
+  });
+}
+
+if (require.main === module) {
+  main();
 }

@@ -19,23 +19,30 @@
 const fs = require('fs');
 const readline = require('readline');
 
-// Stdin is a list of package.json paths to process, one per line
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+// For the given package.json, return a Provides value of the form:
+// npmlib(<name>) = <version>
+function processPackageJSON(packageObj) {
+  return 'npmlib(' + packageObj.name + ') = ' + packageObj.version + '\n';
+}
+module.exports.processPackageJSON = processPackageJSON;
 
-rl.on('line', (line) => {
-  processPackageJson(line);
-});
+function main() {
+  // Stdin is a list of package.json paths to process, one per line
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+  });
 
-// For the given package.json, output that the corresponding RPM
-// Provides: npm(<name>) = <version>
-function processPackageJson(path) {
-  var packageData = fs.readFileSync(path);
+  rl.on('line', (line) => {
+    var packageData = fs.readFileSync(line);
+    var providesData = processPackageJSON(JSON.parse(packageData));
 
-  // Use stdout directly, going through the readline interface generates extra
-  // line events.
-  process.stdout.write('npm(' + packageData.name + ') = ' + packageData.version + '\n');
+    // use stdout directly, going through the readline interface generates extra line events
+    process.stdout.write(providesData);
+  });
+}
+
+if (require.main === module) {
+  main();
 }
