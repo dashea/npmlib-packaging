@@ -4,6 +4,7 @@
   "description": "Scripts for creating RPM packages of NPM modules",
   "author": "dshea@redhat.com",
   "license": "GPL-2.0-or-later",
+  "repository": "https://github.com/dashea/npmlib-packaging.git",
   "dependencies": {
     "semver": "^5.6.0"
   }
