@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+const fs = require('fs');
 const readline = require('readline');
-const fs = require('fs-extra');
 
 // Stdin is a list of package.json paths to process, one per line
 const rl = readline.createInterface({
@@ -32,15 +32,10 @@ rl.on('line', (line) => {
 
 // For the given package.json, output that the corresponding RPM
 // Provides: npm(<name>) = <version>
-async function processPackageJson(path) {
-  try {
-    var packageData = JSON.parse(await fs.readFile(path));
+function processPackageJson(path) {
+  var packageData = fs.readFileSync(path);
 
-    // Use stdout directly, going through the readline interface generates extra
-    // line events.
-    process.stdout.write('npm(' + packageData.name + ') = ' + packageData.version + '\n');
-  } catch (err) {
-    process.stderr.write(err + '\n');
-    process.exit(1);
-  }
+  // Use stdout directly, going through the readline interface generates extra
+  // line events.
+  process.stdout.write('npm(' + packageData.name + ') = ' + packageData.version + '\n');
 }

@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-const fs = require('fs-extra');
+const fs = require('fs');
 const path = require('path');
 const semver = require('semver');
 
@@ -42,20 +42,14 @@ function symlinkModule(module) {
   fs.readdirSync(modulePath).forEach((version) => { symlinkVersion(module, version); });
 }
 
-async function symlinkVersion(module, version) {
+function symlinkVersion(module, version) {
   var modulePath = path.join(buildrootPath, module, version);
-  var packageData;
 
-  try {
-    // Create the node_modules directory
-    fs.mkdirSync(path.join(modulePath, 'node_modules'));
+  // Create the node_modules directory
+  fs.mkdirSync(path.join(modulePath, 'node_modules'));
 
-    // Read package.json
-    var packageData = JSON.parse(await fs.readFile(path.join(modulePath, 'package.json')));
-  } catch (err) {
-    process.stderr.write(err + '\n');
-    process.exit(1);
-  }
+  // Read package.json
+  var packageData = JSON.parse(fs.readFileSync(path.join(modulePath, 'package.json')));
 
   // Process each dependency
   Object.entries(packageData.dependencies).forEach(([depName, depVersion]) => {
@@ -63,16 +57,8 @@ async function symlinkVersion(module, version) {
   });
 }
 
-async function processDependency(modulePath, depName, depVersion) {
-  var depAvailable;
-
-  try {
-    // Find the available versions
-    depAvailable = fs.readdirSync(path.join(npmlibPath, depName));
-  } catch (err) {
-    process.stderr.write(err + '\n');
-    process.exit(1);
-  }
+function processDependency(modulePath, depName, depVersion) {
+  var depAvailable = fs.readdirSync(path.join(npmlibPath, depName));
 
   // Find the max matching version
   var maxVersion = semver.maxSatisfying(depAvailable, depVersion);
@@ -82,12 +68,6 @@ async function processDependency(modulePath, depName, depVersion) {
   }
 
   // Create the symlink
-  try {
-    await fs.symlink(path.join(npmlibPath, depName, maxVersion),
+  fs.symlinkSync(path.join(npmlibPath, depName, maxVersion),
       path.join(modulePath, 'node_modules', depName));
-  } catch (err) {
-    console.error("module path is: " + modulePath);
-    process.stderr.write(err + '\n');
-    process.exit(1);
-  }
 }

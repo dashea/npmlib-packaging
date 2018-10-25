@@ -18,7 +18,7 @@
 
 const readline = require('readline');
 const path = require('path');
-const fs = require('fs-extra');
+const fs = require('fs');
 
 // Stdin is a list of package.json paths to process, one per line
 const rl = readline.createInterface({
@@ -35,16 +35,9 @@ rl.on('line', (line) => {
 });
 
 // walk the dependencies for the given package.json
-async function processPackageJson(packagePath) {
+function processPackageJson(packagePath) {
   var modulePath = path.dirname(packagePath);
-  var packageData;
-
-  try {
-    packageData = JSON.parse(await fs.readFile(packagePath));
-  } catch (err) {
-    process.stderr.write(err + '\n');
-    process.exit(1);
-  }
+  var packageData = JSON.parse(fs.readFileSync(packagePath));
 
   Object.keys(packageData.dependencies).forEach((dependency) => {
     processDependency(modulePath, dependency);
@@ -53,25 +46,13 @@ async function processPackageJson(packagePath) {
 
 // For each dependency, decode the symlink in node_modules to
 // a specific package version
-async function processDependency(modulePath, dependency) {
-  var depLink;
-
-  try {
-    depLink = await fs.readlink(path.join(modulePath, 'node_modules', dependency));
-  } catch (err) {
-    process.stderr.write(err + '\n');
-    process.exit(1);
-  }
+function processDependency(modulePath, dependency) {
+  var depLink = fs.readlinkSync(path.join(modulePath, 'node_modules', dependency));
 
   // The link will be of the form '../../../<depname>/<depversion>/'. All we
   // need is the version.
   var depVersion = path.basename(depLink);
 
   // Write to stdout directly; using readline will generate more line events
-  try {
-    process.stdout.write('Requires: npmlib(' + dependency + ') = ' + depVersion + '\n');
-  } catch (err) {
-    process.stderr.write(err + '\n');
-    process.exit(1);
-  }
+  process.stdout.write('Requires: npmlib(' + dependency + ') = ' + depVersion + '\n');
 }
