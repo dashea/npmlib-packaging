@@ -27,9 +27,11 @@ function processPackageJSON(packagePath, packageObj) {
   // start with the engine dependency
   var reqs = 'nodejs(engine)\n';
 
-  reqs = Object.keys(packageObj.dependencies).reduce((acc, dependency) => {
-    return acc + processDependency(modulePath, dependency);
-  }, reqs);
+  if ("dependencies" in packageObj) {
+      reqs = Object.keys(packageObj.dependencies).reduce((acc, dependency) => {
+        return acc + processDependency(modulePath, dependency);
+      }, reqs);
+  }
 
   return reqs;
 }
@@ -59,10 +61,10 @@ function main() {
 
   rl.on('line', (line) => {
     var packageData = fs.readFileSync(line);
-    var requiresData = processPackageJSON(JSON.parse(line, packageData));
+    var requiresData = processPackageJSON(line, JSON.parse(packageData));
 
     // use stdout directly, going through the readline interface generates extra line events
-    process.stdout.write(requireData);
+    process.stdout.write(requiresData);
   });
 }
 
