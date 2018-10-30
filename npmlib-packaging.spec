@@ -15,6 +15,9 @@ Requires:       nodejs-packaging
 %global semver_version 5.6.0
 Requires:       npmlib(semver) = %{semver_version}
 
+BuildArch:      noarch
+ExclusiveArch:  %{nodejs_arches} noarch
+
 %description
 This packaging contains RPM macros and other utilities for packaging
 Node.js modules from npm. To generate packages using this framework,
@@ -27,26 +30,26 @@ use npm2spec.
 # nothing to build
 
 %install
-mkdir -p %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/node_modules
-cp -r rpm %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/
+mkdir -p %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/%{version}/node_modules
+cp -r rpm %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/%{version}
 # bootstrap the deps
-ln -s %{_prefix}/lib/npm-library/semver/%{semver_version} %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/node_modules/semver
+ln -s %{_prefix}/lib/npm-library/semver/%{semver_version} %{buildroot}%{_prefix}/lib/npm-library/npmlib-packaging/%{version}/node_modules/semver
 
 mkdir -p %{buildroot}%{_rpmconfigdir}
 mkdir -p %{buildroot}%{_rpmmacrodir}
 mkdir -p %{buildroot}%{_fileattrsdir}
 
-ln -s %{nodejs_sitelib}/rpm/macros.d/macros.npmlib %{buildroot}%{_rpmmacrodir}/macros.npmlib
-ln -s %{nodejs_sitelib}/rpm/fileattrs/npmlib.attr %{buildroot}%{_fileattrsdir}/npmlib.attr
-ln -s %{nodejs_sitelib}/rpm/npmlib.prov %{buildroot}%{_rpmconfigdir}/npmlib.prov
-ln -s %{nodejs_sitelib}/rpm/npmlib.req %{buildroot}%{_rpmconfigdir}/npmlib.req
-ln -s %{nodejs_sitelib}/rpm/npmlib-symlink-deps %{buildroot}%{_rpmconfigdir}/npmlib-symlink-deps
+ln -s %{_prefix}/lib/npm-library/npmlib-packaging/%{version}/rpm/macros.d/macros.npmlib %{buildroot}%{_rpmmacrodir}/macros.npmlib
+ln -s %{_prefix}/lib/npm-library/npmlib-packaging/%{version}/rpm/fileattrs/npmlib.attr %{buildroot}%{_fileattrsdir}/npmlib.attr
+ln -s %{_prefix}/lib/npm-library/npmlib-packaging/%{version}/rpm/npmlib.prov %{buildroot}%{_rpmconfigdir}/npmlib.prov
+ln -s %{_prefix}/lib/npm-library/npmlib-packaging/%{version}/rpm/npmlib.req %{buildroot}%{_rpmconfigdir}/npmlib.req
+ln -s %{_prefix}/lib/npm-library/npmlib-packaging/%{version}/rpm/npmlib-symlink-deps %{buildroot}%{_rpmconfigdir}/npmlib-symlink-deps
 
 %files
 %doc README.md
 %license COPYING
-%{_prefix}/lib/npm-library/
-%{_prefix}/lib/npm-library/npmlib-packaging/
+%dir %{_prefix}/lib/npm-library/
+%{_prefix}/lib/npm-library/npmlib-packaging/%{version}
 %{_rpmmacrodir}/macros.npmlib
 %{_fileattrsdir}/npmlib.attr
 %{_rpmconfigdir}/npmlib.prov
