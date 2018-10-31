@@ -52,9 +52,11 @@ function symlinkVersion(module, version) {
   var packageData = JSON.parse(fs.readFileSync(path.join(modulePath, 'package.json')));
 
   // Process each dependency
-  Object.entries(packageData.dependencies).forEach(([depName, depVersion]) => {
-    processDependency(modulePath, depName, depVersion);
-  });
+  if (packageData.dependencies) {
+    Object.entries(packageData.dependencies).forEach(([depName, depVersion]) => {
+      processDependency(modulePath, depName, depVersion);
+    });
+  }
 }
 
 function processDependency(modulePath, depName, depVersion) {
