@@ -30,21 +30,34 @@ if (process.env.RPM_BUILD_ROOT === undefined) {
 
 const buildrootPath = path.join(process.env.RPM_BUILD_ROOT, npmlibPath);
 try {
-  fs.readdirSync(buildrootPath).forEach(symlinkModule);
+  fs.readdirSync(buildrootPath).forEach((subdir) => {
+    var modulePath = path.join(buildrootPath, subdir);
+    symlinkModule(modulePath);
+  });
 } catch (err) {
   process.stderr.write(err + '\n');
   process.exit(1);
 }
 
-function symlinkModule(module) {
-  var modulePath = path.join(buildrootPath, module);
-  // Iterate over each version in this module directory
-  fs.readdirSync(modulePath).forEach((version) => { symlinkVersion(module, version); });
+function symlinkModule(modulePath) {
+  // if this is a scoped module, we need to dive one level deeper
+  // otherwise, each directory we find is a module version
+  var scoped = false;
+  if (path.basename(modulePath).startsWith('@')) {
+    scoped = true;
+  }
+
+  fs.readdirSync(modulePath).forEach((subdir) => { 
+    var nextPath = path.join(modulePath, subdir);
+    if (scoped) {
+      symlinkModule(nextPath);
+    } else {
+      symlinkVersion(nextPath); 
+    }
+  });
 }
 
-function symlinkVersion(module, version) {
-  var modulePath = path.join(buildrootPath, module, version);
-
+function symlinkVersion(modulePath) {
   // Create the node_modules directory
   fs.mkdirSync(path.join(modulePath, 'node_modules'));
 
