@@ -24,7 +24,7 @@ Node.js modules from npm. To generate packages using this framework,
 use npm2spec.
 
 %prep
-%setup -q
+%setup -q -n package
 
 %build
 # nothing to build
