@@ -123,14 +123,19 @@ function processPeerDependency(modulePath, depName, depPath) {
 
   function copyDir(sourcePath, destPath) {
     fs.readdirSync(sourcePath).forEach((entry) => {
-      var stat = fs.lstatSync(path.join(sourcePath, entry));
+      var sourceFile = path.join(sourcePath, entry);
+      var destFile = path.join(destPath, entry);
+      var stat = fs.lstatSync(sourceFile);
       if (stat.isDirectory()) {
         // copy the directory struture and recurse
-        fs.mkdirSync(path.join(destPath, entry));
-        copyDir(path.join(sourcePath, entry), path.join(destPath, entry));
+        fs.mkdirSync(destFile);
+        copyDir(sourceFile, destFile);
+      } else if (stat.isSymbolicLink()) {
+        var target = fs.readlinkSync(sourceFile);
+        fs.symlinkSync(target, destFile);
       } else {
         // copy everything else
-        fs.copyFileSync(path.join(sourcePath, entry), path.join(destPath, entry));
+        fs.copyFileSync(sourceFile, destFile);
       }
     });
   }
