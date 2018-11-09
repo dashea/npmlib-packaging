@@ -82,7 +82,13 @@ function processDependency(modulePath, depName, depVersion) {
     process.exit(1);
   }
 
+  var symlinkPath = path.join(modulePath, 'node_modules', depName);
+
+  // if the dep is a scoped module, create a directory for the scope
+  if (depName.indexOf('/') !== -1) {
+    fs.mkdirSync(path.dirname(symlinkPath));
+  }
+
   // Create the symlink
-  fs.symlinkSync(path.join(npmlibPath, depName, maxVersion),
-      path.join(modulePath, 'node_modules', depName));
+  fs.symlinkSync(path.join(npmlibPath, depName, maxVersion), symlinkPath);
 }
