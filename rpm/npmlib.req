@@ -40,14 +40,23 @@ module.exports.processPackageJSON = processPackageJSON;
 // For each dependency, decode the symlink in node_modules to
 // a specific package version
 function processDependency(modulePath, dependency) {
-  var depLink = fs.readlinkSync(path.join(modulePath, 'node_modules', dependency));
+  var depPath = path.join(modulePath, 'node_modules', dependency);
+  var stat = fs.lstatSync(depPath);
 
-  // The link will be of the form '../../../<depname>/<depversion>/'. All we
-  // need is the version.
-  var depVersion = path.basename(depLink);
+  if (stat.isSymbolicLink()) {
+    // normal, symlinked dep
+    var depLink = fs.readlinkSync(depPath);
 
-  // Write to stdout directly; using readline will generate more line events
-  return 'npmlib(' + dependency + ') = ' + depVersion + '\n';
+    // The link will be of the form '../../../<depname>/<depversion>/'. All we
+    // need is the version.
+    var depVersion = path.basename(depLink);
+
+    // Write to stdout directly; using readline will generate more line events
+    return 'npmlib(' + dependency + ') = ' + depVersion + '\n';
+  } else {
+    // bundled peer dep, skip
+    return '';
+  }
 }
 module.exports.processDependency = processDependency;
 

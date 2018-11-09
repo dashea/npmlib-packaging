@@ -82,13 +82,58 @@ function processDependency(modulePath, depName, depVersion) {
     process.exit(1);
   }
 
+  var depPath = path.join(npmlibPath, depName, maxVersion);
   var symlinkPath = path.join(modulePath, 'node_modules', depName);
+
+  // read the package.json for the dependency
+  var depData = JSON.parse(fs.readFileSync(path.join(depPath, 'package.json')));
 
   // if the dep is a scoped module, create a directory for the scope
   if (depName.indexOf('/') !== -1) {
     fs.mkdirSync(path.dirname(symlinkPath));
   }
 
-  // Create the symlink
-  fs.symlinkSync(path.join(npmlibPath, depName, maxVersion), symlinkPath);
+  // if the dependency has peerDependencies, things get a little more complicated
+  if ("peerDependencies" in depData) {
+    processPeerDependency(modulePath, depName, depPath);
+  } else {
+    // Otherwise, just create a symlink
+    fs.symlinkSync(path.join(npmlibPath, depName, maxVersion), symlinkPath);
+  }
+}
+
+function processPeerDependency(modulePath, depName, depPath) {
+  // if the dependency has peer dependencies, we can't just do a simple symlink.
+  // for instance, say we have something like:
+  // moduleA: { "dependencies": {"dep-framework": <version>, "dep-plugin": <version>}}
+  // dep-plugin: { "peerDependencies": { "dep-framework": <version> }}
+  //
+  // dep-plugin expects that whatever requires dep-plugin will also require dep-framework,
+  // making the framework API available from the plugin. Furthermore, we can't just treat
+  // dep-framework as a dependency of dep-plugin, since pinning to a specific version of
+  // dep-framework may break the version expectations for whatever requires dep-framework+dep-plugin.
+  // So for all of the require()s to work, we need moduleA/node_modules to contain both
+  // dep-framework and dep-plugin, and dep-plugin cannot be a symlink since it needs to
+  // be able to find ../dep-framework/. Effectively, we need to bundle dep-plugin in
+  // any modules that require it.
+
+  // start by creating a directory for the plugin
+  var depDest = path.join(modulePath, 'node_modules', depName);
+  fs.mkdirSync(depDest);
+
+  function copyDir(sourcePath, destPath) {
+    fs.readdirSync(sourcePath).forEach((entry) => {
+      var stat = fs.lstatSync(path.join(sourcePath, entry));
+      if (stat.isDirectory()) {
+        // copy the directory struture and recurse
+        fs.mkdirSync(path.join(destPath, entry));
+        copyDir(path.join(sourcePath, entry), path.join(destPath, entry));
+      } else {
+        // copy everything else
+        fs.copyFileSync(path.join(sourcePath, entry), path.join(destPath, entry));
+      }
+    });
+  }
+
+  copyDir(depPath, depDest);
 }
