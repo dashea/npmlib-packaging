@@ -20,57 +20,57 @@ const readline = require('readline');
 const path = require('path');
 const fs = require('fs');
 
+// For each dependency, decode the symlink in node_modules to
+// a specific package version
+function processDependency(modulePath, dependency) {
+  const depPath = path.join(modulePath, 'node_modules', dependency);
+  const stat = fs.lstatSync(depPath);
+
+  if (stat.isSymbolicLink()) {
+    // normal, symlinked dep
+    const depLink = fs.readlinkSync(depPath);
+
+    // The link will be of the form '../../../<depname>/<depversion>/'. All we
+    // need is the version.
+    const depVersion = path.basename(depLink);
+
+    // Write to stdout directly; using readline will generate more line events
+    return `npmlib(${dependency}) = ${depVersion}\n`;
+  }
+
+  // otherwise it's a bundled peer dep, skip
+  return '';
+}
+module.exports.processDependency = processDependency;
+
 // walk the dependencies for the given package.json
 function processPackageJSON(packagePath, packageObj) {
-  var modulePath = path.dirname(packagePath);
+  const modulePath = path.dirname(packagePath);
 
   // start with the engine dependency
-  var reqs = 'nodejs(engine)\n';
+  let reqs = 'nodejs(engine)\n';
 
-  if ("dependencies" in packageObj) {
-      reqs = Object.keys(packageObj.dependencies).reduce((acc, dependency) => {
-        return acc + processDependency(modulePath, dependency);
-      }, reqs);
+  if ('dependencies' in packageObj) {
+    reqs = Object
+      .keys(packageObj.dependencies)
+      .reduce((acc, dependency) => (acc + processDependency(modulePath, dependency)), reqs);
   }
 
   return reqs;
 }
 module.exports.processPackageJSON = processPackageJSON;
 
-// For each dependency, decode the symlink in node_modules to
-// a specific package version
-function processDependency(modulePath, dependency) {
-  var depPath = path.join(modulePath, 'node_modules', dependency);
-  var stat = fs.lstatSync(depPath);
-
-  if (stat.isSymbolicLink()) {
-    // normal, symlinked dep
-    var depLink = fs.readlinkSync(depPath);
-
-    // The link will be of the form '../../../<depname>/<depversion>/'. All we
-    // need is the version.
-    var depVersion = path.basename(depLink);
-
-    // Write to stdout directly; using readline will generate more line events
-    return 'npmlib(' + dependency + ') = ' + depVersion + '\n';
-  } else {
-    // bundled peer dep, skip
-    return '';
-  }
-}
-module.exports.processDependency = processDependency;
-
 function main() {
   // Stdin is a list of package.json paths to process, one per line
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    terminal: false
+    terminal: false,
   });
 
   rl.on('line', (line) => {
-    var packageData = fs.readFileSync(line);
-    var requiresData = processPackageJSON(line, JSON.parse(packageData));
+    const packageData = fs.readFileSync(line);
+    const requiresData = processPackageJSON(line, JSON.parse(packageData));
 
     // use stdout directly, going through the readline interface generates extra line events
     process.stdout.write(requiresData);

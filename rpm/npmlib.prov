@@ -23,12 +23,12 @@ const readline = require('readline');
 // For the given package.json, return a Provides value of the form:
 // npmlib(<name>) = <version>
 function processPackageJSON(packageObj) {
-  return 'npmlib(' + packageObj.name + ') = ' + packageObj.version + '\n';
+  return `npmlib(${packageObj.name}) = ${packageObj.version}\n`;
 }
 module.exports.processPackageJSON = processPackageJSON;
 
 function processBundledDeps(moduleDir) {
-  var depsDir = path.join(moduleDir, 'node_modules');
+  const depsDir = path.join(moduleDir, 'node_modules');
   if (!fs.existsSync(depsDir)) {
     return '';
   }
@@ -36,23 +36,19 @@ function processBundledDeps(moduleDir) {
   function depToProvides(depDir) {
     // if this is a scoped package, go one level deeper
     if (path.basename(depDir).startsWith('@')) {
-      return fs.readdirSync(depDir).map((entry) => {
-        return depToProvides(path.join(depDir, entry));
-      }).join('');
-    } else {
-      var stat = fs.lstatSync(depDir);
-      if (stat.isDirectory()) {
-        var packageData = JSON.parse(fs.readFileSync(path.join(depDir, 'package.json')));
-        return 'bundled(npmlib(' + packageData.name + ')) = ' + packageData.version + '\n';
-      } else {
-        return '';
-      }
+      return fs.readdirSync(depDir).map(entry => depToProvides(path.join(depDir, entry))).join('');
     }
+
+    const stat = fs.lstatSync(depDir);
+    if (stat.isDirectory()) {
+      const packageData = JSON.parse(fs.readFileSync(path.join(depDir, 'package.json')));
+      return `bundled(npmlib(${packageData.name})) = ${packageData.version}\n`;
+    }
+
+    return '';
   }
 
-  return fs.readdirSync(depsDir).map((entry) => {
-    return depToProvides(path.join(depsDir, entry));
-  }).join('');
+  return fs.readdirSync(depsDir).map(entry => depToProvides(path.join(depsDir, entry))).join('');
 }
 module.exports.processBundledDeps = processBundledDeps;
 
@@ -61,12 +57,12 @@ function main() {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    terminal: false
+    terminal: false,
   });
 
   rl.on('line', (line) => {
-    var packageData = fs.readFileSync(line);
-    var providesData = processPackageJSON(JSON.parse(packageData));
+    const packageData = fs.readFileSync(line);
+    let providesData = processPackageJSON(JSON.parse(packageData));
     providesData += processBundledDeps(path.dirname(line));
 
     // use stdout directly, going through the readline interface generates extra line events
