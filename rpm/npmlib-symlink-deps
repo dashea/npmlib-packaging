@@ -127,19 +127,18 @@ function symlinkModule(modulePath) {
   });
 }
 
-// find the built modules in $RPM_BUILD_ROOT
-if (process.env.RPM_BUILD_ROOT === undefined) {
-  console.error('RPM_BUILD_ROOT is not set in the environment');
-  process.exit(1);
-}
-
-const buildrootPath = path.join(process.env.RPM_BUILD_ROOT, npmlibPath);
-try {
+// figure out where we're running
+// if there's a command line argument, use that as the module
+// otherwise, find built modules in $RPM_BUILD_ROOT
+if (process.argv.length >= 3) {
+  symlinkVersion(process.argv[2]);
+} else if (process.env.RPM_BUILD_ROOT !== undefined) {
+  const buildrootPath = path.join(process.env.RPM_BUILD_ROOT, npmlibPath);
   fs.readdirSync(buildrootPath).forEach((subdir) => {
     const modulePath = path.join(buildrootPath, subdir);
     symlinkModule(modulePath);
   });
-} catch (err) {
-  process.stderr.write(`${err}\n`);
+} else {
+  console.error('RPM_BUILD_ROOT is not set in the environment and no argument provided');
   process.exit(1);
 }
