@@ -7,7 +7,7 @@
 
 Name:           npmlib-semver
 Version:        5.6.0
-Release:        0.2%{?dist}
+Release:        0.3%{?dist}
 Summary:        The semantic version parser used by npm.
 
 License:        ISC
@@ -57,10 +57,6 @@ ln -s %{npmlib_dir}/%{modulename}/%{version}/bin/semver %{buildroot}/%{_bindir}/
 mkdir -p %{buildroot}%{nodejs_dir}
 ln -s %{npmlib_dir}/%{modulename}/%{version} %{buildroot}/%{nodejs_dir}/%{modulename}
 
-%check
-rm -rf node_modules && %{npmlib_symlink_deps} .
-%{__nodejs} -e 'require("./")'
-
 %files
 %doc README.md
 %license LICENSE
@@ -74,5 +70,5 @@ rm -rf node_modules && %{npmlib_symlink_deps} .
 %dir %{npmlib_dir}/%{modulename}/
 
 %changelog
-* Fri Nov 16 2018 David Shea <dshea@redhat.com> - 5.6.0-0.2
+* Fri Nov 16 2018 David Shea <dshea@redhat.com> - 5.6.0-0.3
 - bootstrap package
