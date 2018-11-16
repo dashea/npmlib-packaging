@@ -49,6 +49,7 @@ ln -s %{_prefix}/lib/npm-library/npmlib-packaging/%{version}/rpm/npmlib-symlink-
 %doc README.md
 %license COPYING
 %dir %{_prefix}/lib/npm-library/
+%dir %{_prefix}/lib/npm-library/npmlib-packaging
 %{_prefix}/lib/npm-library/npmlib-packaging/%{version}
 %{_rpmmacrodir}/macros.npmlib
 %{_fileattrsdir}/npmlib.attr
