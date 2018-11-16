@@ -1,5 +1,5 @@
 Name:           npmlib-packaging
-Version:        1.0.6
+Version:        1.1.0
 Release:        1%{?dist}
 Summary:        An improved framework for packaging npm modules
 
@@ -58,5 +58,5 @@ ln -s %{_prefix}/lib/npm-library/npmlib-packaging/%{version}/rpm/npmlib-symlink-
 %{_rpmconfigdir}/npmlib-symlink-deps
 
 %changelog
-* Tue Nov 13 2018 David Shea <dshea@redhat.com> - 1.0.6-1
+* Fri Nov 16 2018 David Shea <dshea@redhat.com> - 1.1.0-1
 - See git log for changes
