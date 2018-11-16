@@ -1,18 +1,27 @@
+%global modulename semver
+
+%global npmlib_dir %{_prefix}/lib/npm-library
+%global nodejs_dir %{nodejs_sitelib}
+
+%define __requires_exclude_from ^%{npmlib_dir}/%{modulename}/%{version}/tests?/.*
+
 Name:           npmlib-semver
 Version:        5.6.0
-Release:        0.1%{?dist}
+Release:        0.2%{?dist}
 Summary:        The semantic version parser used by npm.
 
 License:        ISC
-URL:            https://github.com/npm/node-semver
-Source0:        https://registry.npmjs.org/semver/-/semver-%{version}.tgz
+URL:            https://github.com/npm/node-semver#readme
+Source0:        https://registry.npmjs.org/semver/-/semver-5.6.0.tgz
+
 
 BuildRequires:  nodejs-packaging
 
 BuildArch:      noarch
 ExclusiveArch:  %{nodejs_arches} noarch
 
-Requires:       npmlib(semver) = %{version}
+
+Requires:       npmlib(%{modulename}) = %{version}
 
 %description
 The semantic version parser used by npm.
@@ -29,32 +38,41 @@ The semantic version parser used by npm.
 This package is a hand-written spec used to bootstrap npmlib-packaging.
 
 %prep
-%setup -q -n package
+%autosetup -p0 -n package
 
 %build
 # Nothing to build
 
 %install
-mkdir -p %{buildroot}%{_prefix}/lib/npm-library/semver/%{version}
-cp -pr bin package.json range.bnf semver.js %{buildroot}%{_prefix}/lib/npm-library/semver/%{version}/
+mkdir -p %{buildroot}%{npmlib_dir}/%{modulename}/%{version}
+cp -pr bin %{buildroot}%{npmlib_dir}/%{modulename}/%{version}
+cp -pr package.json %{buildroot}%{npmlib_dir}/%{modulename}/%{version}
+cp -pr range.bnf %{buildroot}%{npmlib_dir}/%{modulename}/%{version}
+cp -pr semver.js %{buildroot}%{npmlib_dir}/%{modulename}/%{version}
 
 mkdir -p %{buildroot}%{_bindir}
-ln -s %{_prefix}/lib/npm-library/semver/%{version}/bin/semver %{buildroot}/%{_bindir}/semver
+ln -s %{npmlib_dir}/%{modulename}/%{version}/bin/semver %{buildroot}/%{_bindir}/semver
 
-mkdir -p %{buildroot}%{nodejs_sitelib}
-ln -s %{_prefix}/lib/npm-library/semver/%{version} %{buildroot}/%{nodejs_sitelib}/semver
+
+mkdir -p %{buildroot}%{nodejs_dir}
+ln -s %{npmlib_dir}/%{modulename}/%{version} %{buildroot}/%{nodejs_dir}/%{modulename}
+
+%check
+rm -rf node_modules && %{npmlib_symlink_deps} .
+%{__nodejs} -e 'require("./")'
 
 %files
 %doc README.md
 %license LICENSE
-%{nodejs_sitelib}/semver
 %{_bindir}/semver
+%{nodejs_dir}/%{modulename}
 
 %files 5.6.0
 %doc README.md
 %license LICENSE
-%{_prefix}/lib/npm-library/semver/%{version}
+%{npmlib_dir}/%{modulename}/%{version}
+%dir %{npmlib_dir}/%{modulename}/
 
 %changelog
-* Thu Oct 25 2018 David Shea <dshea@redhat.com> - 5.6.0-0.1
-- Initial bootstrap package
+* Fri Nov 16 2018 David Shea <dshea@redhat.com> - 5.6.0-0.2
+- bootstrap package
