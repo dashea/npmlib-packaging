@@ -82,7 +82,10 @@ function processDependency(modulePath, depName, depVersion) {
 
   // if the dep is a scoped module, create a directory for the scope
   if (depName.indexOf('/') !== -1) {
-    fs.mkdirSync(path.dirname(symlinkPath));
+    const scopeDir = path.dirname(symlinkPath);
+    if (!fs.existsSync(scopeDir)) {
+      fs.mkdirSync(path.dirname(symlinkPath));
+    }
   }
 
   // if the dependency has peerDependencies, things get a little more complicated
