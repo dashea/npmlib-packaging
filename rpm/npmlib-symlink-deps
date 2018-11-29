@@ -22,7 +22,7 @@ const semver = require('semver');
 
 const npmlibPath = '/usr/lib/npm-library';
 
-function processPeerDependency(modulePath, depName, depPath) {
+function processPeerDependency(depDest, depName, depPath) {
   // if the dependency has peer dependencies, we can't just do a simple symlink.
   // for instance, say we have something like:
   // moduleA: { "dependencies": {"dep-framework": <version>, "dep-plugin": <version>}}
@@ -39,7 +39,6 @@ function processPeerDependency(modulePath, depName, depPath) {
   // modules that require it.
 
   // start by creating a directory for the plugin
-  const depDest = path.join(modulePath, 'node_modules', depName);
   fs.mkdirSync(depDest);
 
   function copyDir(sourcePath, destPath) {
@@ -65,41 +64,95 @@ function processPeerDependency(modulePath, depName, depPath) {
 }
 
 function processDependency(modulePath, depName, depVersion) {
-  const depAvailable = fs.readdirSync(path.join(npmlibPath, depName));
+  // if the dependency already exists in node_modules, assume the dependency was
+  // manually bundled and leave it alone
+  const depDest = path.join(modulePath, 'node_modules', depName);
+  if (fs.existsSync(depDest)) {
+    return;
+  }
 
-  // Find the max matching version
-  const maxVersion = semver.maxSatisfying(depAvailable, depVersion);
-  if (maxVersion === null) {
+  // figure out the source of the dependency
+  // If we running from within a node_modules directory, the module being processed
+  // is bundled within another module.  This means that the dependencies for
+  // this bundled module may either be 1) in the directory above modulePath
+  // (which is the outer module's node_modules), if it is a dependency shared
+  // by the outer module, or 2) two directories above modulePath, if there is a
+  // circular dependency on the outer module.
+  // Otherwise use the global npm-library.
+  let depPath;
+  let depJSON;
+  if (path.basename(path.dirname(fs.realpathSync(modulePath))) === 'node_modules') {
+    const oneUp = path.join(modulePath, '..', depName);
+    if (fs.existsSync(oneUp)) {
+      // read the package.json to figure out if this version is compatible
+      const oneUpPackageJSON = path.join(oneUp, 'package.json');
+      const oneUpData = JSON.parse(fs.readFileSync(oneUpPackageJSON));
+      if (semver.satisfies(oneUpData.version, depVersion)) {
+        // use a path relative to node_modules
+        depPath = path.join('..', '..', depName);
+        depJSON = oneUpPackageJSON;
+      }
+    }
+
+    // otherwise, check if the outer module name matches
+    if (depPath === undefined) {
+      const twoUp = path.join(modulePath, '..', '..');
+      const twoUpPackageJSON = path.join(twoUp, 'package.json');
+      if (fs.existsSync(twoUpPackageJSON)) {
+        const twoUpData = JSON.parse(fs.readFileSync(twoUpPackageJSON));
+        if (twoUpData.name === depName && semver.satisfies(twoUpData.version, depVersion)) {
+          depPath = path.join('..', '..', '..');
+          depJSON = twoUpPackageJSON;
+        }
+      }
+    }
+  }
+
+  // otherwise, look for the dependency in npm-library
+  if (depPath === undefined) {
+    const depAvailable = fs.readdirSync(path.join(npmlibPath, depName));
+
+    // Find the max matching version
+    const maxVersion = semver.maxSatisfying(depAvailable, depVersion);
+    if (maxVersion !== null) {
+      depPath = path.join(npmlibPath, depName, maxVersion);
+      depJSON = path.join(depPath, 'package.json');
+    }
+  }
+
+  // nothing found by this point is an error
+  if (depPath === undefined) {
     console.error(`No version available for ${depName}@${depVersion}`);
     process.exit(1);
   }
 
-  const depPath = path.join(npmlibPath, depName, maxVersion);
-  const symlinkPath = path.join(modulePath, 'node_modules', depName);
 
   // read the package.json for the dependency
-  const depData = JSON.parse(fs.readFileSync(path.join(depPath, 'package.json')));
+  const depData = JSON.parse(fs.readFileSync(depJSON));
 
   // if the dep is a scoped module, create a directory for the scope
   if (depName.indexOf('/') !== -1) {
-    const scopeDir = path.dirname(symlinkPath);
+    const scopeDir = path.dirname(depDest);
     if (!fs.existsSync(scopeDir)) {
-      fs.mkdirSync(path.dirname(symlinkPath));
+      fs.mkdirSync(path.dirname(depDest));
     }
   }
 
   // if the dependency has peerDependencies, things get a little more complicated
   if ('peerDependencies' in depData) {
-    processPeerDependency(modulePath, depName, depPath);
+    processPeerDependency(depDest, depName, depPath);
   } else {
     // Otherwise, just create a symlink
-    fs.symlinkSync(path.join(npmlibPath, depName, maxVersion), symlinkPath);
+    fs.symlinkSync(depPath, depDest);
   }
 }
 
 function symlinkVersion(modulePath) {
   // Create the node_modules directory
-  fs.mkdirSync(path.join(modulePath, 'node_modules'));
+  const nodeModulesPath = path.join(modulePath, 'node_modules');
+  if (!fs.existsSync(nodeModulesPath)) {
+    fs.mkdirSync(nodeModulesPath);
+  }
 
   // Read package.json
   const packageData = JSON.parse(fs.readFileSync(path.join(modulePath, 'package.json')));
