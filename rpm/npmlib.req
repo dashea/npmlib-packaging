@@ -34,8 +34,7 @@ function processDependency(modulePath, dependency) {
     // need is the version.
     const depVersion = path.basename(depLink);
 
-    // Write to stdout directly; using readline will generate more line events
-    return `npmlib(${dependency}) = ${depVersion}\n`;
+    return `npmlib(${dependency}) = ${depVersion}`;
   }
 
   // otherwise it's a bundled peer dep, skip
@@ -47,14 +46,17 @@ module.exports.processDependency = processDependency;
 function processPackageJSON(packagePath, packageObj) {
   const modulePath = path.dirname(packagePath);
 
-  // start with the engine dependency
-  let reqs = 'nodejs(engine)\n';
+  let reqs = [];
 
   if ('dependencies' in packageObj) {
     reqs = Object
       .keys(packageObj.dependencies)
-      .reduce((acc, dependency) => (acc + processDependency(modulePath, dependency)), reqs);
+      .map(dependency => processDependency(modulePath, dependency))
+      .filter(dependency => dependency !== '');
   }
+
+  // add the engine dependency
+  reqs.push('nodejs(engine)');
 
   return reqs;
 }
@@ -68,13 +70,20 @@ function main() {
     terminal: false,
   });
 
-  rl.on('line', (line) => {
-    const packageData = fs.readFileSync(line);
-    const requiresData = processPackageJSON(line, JSON.parse(packageData));
+  let requires = [];
+  rl
+    .on('line', (line) => {
+      const packageData = fs.readFileSync(line);
+      requires = requires.concat(processPackageJSON(line, JSON.parse(packageData)));
+    })
+    .on('close', () => {
+      // uniq the result
+      requires.sort();
+      requires.filter((req, idx) => !(requires[idx + 1] === req));
 
-    // use stdout directly, going through the readline interface generates extra line events
-    process.stdout.write(requiresData);
-  });
+      process.stdout.write(requires.join('\n'));
+      process.stdout.write('\n');
+    });
 }
 
 if (require.main === module) {

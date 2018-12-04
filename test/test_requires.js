@@ -22,7 +22,7 @@ describe('auto-requires.processDependency', () => {
       path.join(modulesDir, 'test-module'));
 
     assert.equal(req.processDependency(path.join(modulesDir, '..'), 'test-module'),
-      'npmlib(test-module) = 1.2.3\n');
+      'npmlib(test-module) = 1.2.3');
   });
 
   it('should throw an error on a missing symlink', () => {
@@ -48,11 +48,13 @@ describe('auto-requires.processJSON', () => {
       },
     };
 
-    const testResult = 'nodejs(engine)\n'
-      + 'npmlib(test-module-1) = 1.2.3\n'
-      + 'npmlib(test-module-2) = 2.4.5\n';
+    const testResult = [
+      'npmlib(test-module-1) = 1.2.3',
+      'npmlib(test-module-2) = 2.4.5',
+      'nodejs(engine)',
+    ];
 
-    assert.equal(req.processPackageJSON(path.join(modulesDir, '..', 'package.json'), testData),
+    assert.deepStrictEqual(req.processPackageJSON(path.join(modulesDir, '..', 'package.json'), testData),
       testResult);
   });
 });
