@@ -43,8 +43,10 @@ function processDependency(modulePath, dependency) {
 module.exports.processDependency = processDependency;
 
 // walk the dependencies for the given package.json
-function processPackageJSON(packagePath, packageObj) {
+function processPackageJSON(packagePath) {
   const modulePath = path.dirname(packagePath);
+  const packageData = fs.readFileSync(packagePath);
+  const packageObj = JSON.parse(packageData);
 
   let reqs = [];
 
@@ -53,6 +55,19 @@ function processPackageJSON(packagePath, packageObj) {
       .keys(packageObj.dependencies)
       .map(dependency => processDependency(modulePath, dependency))
       .filter(dependency => dependency !== '');
+  }
+
+  // look for bundled modules, and walk those package.json files
+  const nodeModulesPath = path.join(modulePath, 'node_modules');
+  if (fs.existsSync(nodeModulesPath)) {
+    fs.readdirSync(nodeModulesPath).forEach((entry) => {
+      const subModulePath = path.join(nodeModulesPath, entry);
+      const subPackagePath = path.join(subModulePath, 'package.json');
+      const stat = fs.lstatSync(subModulePath);
+      if (stat.isDirectory() && fs.existsSync(subPackagePath)) {
+        reqs = reqs.concat(processPackageJSON(subPackagePath));
+      }
+    });
   }
 
   // add the engine dependency
@@ -73,8 +88,7 @@ function main() {
   let requires = [];
   rl
     .on('line', (line) => {
-      const packageData = fs.readFileSync(line);
-      requires = requires.concat(processPackageJSON(line, JSON.parse(packageData)));
+      requires = requires.concat(processPackageJSON(line));
     })
     .on('close', () => {
       // uniq the result
