@@ -9,7 +9,7 @@ tmp.setGracefulCleanup();
 const req = require('../rpm/npmlib.req');
 
 function makeModulesDir() {
-  const tmpdir = tmp.dirSync();
+  const tmpdir = tmp.dirSync({ unsafeCleanup: true });
   const modulesDir = path.join(tmpdir.name, 'node_modules');
   fs.mkdirSync(modulesDir);
   return modulesDir;

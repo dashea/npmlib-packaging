@@ -10,7 +10,7 @@ tmp.setGracefulCleanup();
 const prov = require('../rpm/npmlib.prov');
 
 function makeModulesDir() {
-  const tmpdir = tmp.dirSync();
+  const tmpdir = tmp.dirSync({ unsafeCleanup: true });
   const modulesDir = path.join(tmpdir.name, 'node_modules');
   fs.mkdirSync(modulesDir);
   return modulesDir;
@@ -38,7 +38,7 @@ describe('bundled provides', () => {
   });
 
   it('should skip modules with no dependencies', () => {
-    const moduleDir = tmp.dirSync();
+    const moduleDir = tmp.dirSync({ unsafeCleanup: true });
     assert.equal(prov.processBundledDeps(moduleDir.name), '');
   });
 
