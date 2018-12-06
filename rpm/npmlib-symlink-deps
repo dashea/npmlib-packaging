@@ -63,6 +63,13 @@ function processPeerDependency(depDest, depName, depPath) {
   copyDir(depPath, depDest);
 }
 
+class DepError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'DepError';
+  }
+}
+
 function processDependency(modulePath, depName, depVersion) {
   // if the dependency already exists in node_modules, assume the dependency was
   // manually bundled and leave it alone
@@ -109,21 +116,21 @@ function processDependency(modulePath, depName, depVersion) {
   }
 
   // otherwise, look for the dependency in npm-library
-  if (depPath === undefined) {
-    const depAvailable = fs.readdirSync(path.join(npmlibPath, depName));
+  const libraryPath = path.join(npmlibPath, depName);
+  if ((depPath === undefined) && fs.existsSync(libraryPath)) {
+    const depAvailable = fs.readdirSync(libraryPath);
 
     // Find the max matching version
     const maxVersion = semver.maxSatisfying(depAvailable, depVersion);
     if (maxVersion !== null) {
-      depPath = path.join(npmlibPath, depName, maxVersion);
+      depPath = path.join(libraryPath, maxVersion);
       depJSON = path.join(depPath, 'package.json');
     }
   }
 
   // nothing found by this point is an error
   if (depPath === undefined) {
-    console.error(`No version available for ${depName}@${depVersion}`);
-    process.exit(1);
+    throw new DepError(`No version available for ${depName}@${depVersion}`);
   }
 
 
@@ -161,6 +168,19 @@ function symlinkVersion(modulePath) {
   if (packageData.dependencies) {
     Object.entries(packageData.dependencies).forEach(([depName, depVersion]) => {
       processDependency(modulePath, depName, depVersion);
+    });
+  }
+
+  // If there are optional dependencies, try to process those but ignore errors
+  if (packageData.optionalDependencies) {
+    Object.entries(packageData.optionalDependencies).forEach(([depName, depVersion]) => {
+      try {
+        processDependency(modulePath, depName, depVersion);
+      } catch (e) {
+        if (e.name !== 'DepError') {
+          throw e;
+        }
+      }
     });
   }
 }
